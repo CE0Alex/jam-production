@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EditJobDialog from "@/components/jobs/EditJobDialog";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
@@ -70,227 +70,150 @@ export default function Dashboard({
   userRole: initialUserRole = "sales",
 }: DashboardProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [userRole, setUserRole] = useState<UserRole>(initialUserRole);
-  const [calendarView, setCalendarView] = useState("week");
+  const [calendarView, setCalendarView] = useState("day");
   const [selectedJob, setSelectedJob] = useState<JobEvent | null>(null);
   const [showJobDetails, setShowJobDetails] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  // Production hours data
-  const totalHoursCapacity = 160; // 4 staff × 40 hours
-  const scheduledHours = 98;
-  const remainingHours = totalHoursCapacity - scheduledHours;
-  const utilizationPercentage = (scheduledHours / totalHoursCapacity) * 100;
+  // Calculate production hours data based on actual jobs
+  const calculateProductionData = () => {
+    const totalHoursCapacity = 160; // 4 staff × 40 hours
+
+    // Calculate scheduled hours from actual jobs
+    const scheduledHours = jobEvents.reduce((total, job) => {
+      return total + (job.estimatedHours || 0);
+    }, 0);
+
+    const remainingHours = Math.max(0, totalHoursCapacity - scheduledHours);
+    const utilizationPercentage = Math.min(
+      100,
+      (scheduledHours / totalHoursCapacity) * 100,
+    );
+
+    return {
+      totalHoursCapacity,
+      scheduledHours,
+      remainingHours,
+      utilizationPercentage,
+    };
+  };
+
+  const {
+    totalHoursCapacity,
+    scheduledHours,
+    remainingHours,
+    utilizationPercentage,
+  } = calculateProductionData();
 
   // Staff data with production hours
   const staffMembers: StaffMember[] = [
     {
       id: "1",
-      name: "John Doe",
+      name: "Isaac Johnson",
       role: "Production Manager",
       department: "Production",
       hoursAssigned: 32,
       hoursCapacity: 40,
-      jobsAssigned: 5,
-    },
-    {
-      id: "2",
-      name: "Jane Smith",
-      role: "Print Operator",
-      department: "Production",
-      hoursAssigned: 38,
-      hoursCapacity: 40,
       jobsAssigned: 8,
     },
     {
-      id: "3",
-      name: "Mike Johnson",
-      role: "Finishing Specialist",
+      id: "2",
+      name: "Aaron Smith",
+      role: "Production Specialist",
       department: "Production",
-      hoursAssigned: 18,
+      hoursAssigned: 36,
       hoursCapacity: 40,
-      jobsAssigned: 4,
-    },
-    {
-      id: "4",
-      name: "Sarah Williams",
-      role: "Print Operator",
-      department: "Production",
-      hoursAssigned: 10,
-      hoursCapacity: 40,
-      jobsAssigned: 2,
+      jobsAssigned: 6,
     },
   ];
 
   // Sales staff data
   const salesStaff = [
     {
-      id: "5",
-      name: "Robert Chen",
-      role: "Sales Manager",
-      jobsCreated: 12,
-      hoursScheduled: 45,
-    },
-    {
-      id: "6",
-      name: "Lisa Garcia",
-      role: "Account Executive",
-      jobsCreated: 8,
-      hoursScheduled: 32,
-    },
-    {
-      id: "7",
-      name: "David Kim",
-      role: "Sales Representative",
-      jobsCreated: 6,
-      hoursScheduled: 21,
-    },
-  ];
-
-  const jobEvents: JobEvent[] = [
-    {
-      id: "1",
-      title: "Business Cards",
-      customer: "John Smith",
-      time: "8:00 AM",
-      status: "In Production",
-      priority: "Medium",
-      description: "500 business cards with logo and contact information",
-      productType: "Business Cards",
-      quantity: 500,
-      estimatedHours: 2,
-      assignedTo: "Jane Smith",
-      createdBy: "Robert Chen",
-    },
-    {
-      id: "2",
-      title: "Brochures",
-      customer: "Acme Corp",
-      time: "10:30 AM",
-      status: "Pending",
-      priority: "High",
-      description: "Tri-fold brochures for product launch",
-      productType: "Brochures",
-      quantity: 1000,
-      estimatedHours: 4,
-      assignedTo: "John Doe",
-      createdBy: "Lisa Garcia",
-    },
-    {
       id: "3",
-      title: "Banners",
-      customer: "City Event",
-      time: "1:00 PM",
-      status: "Not Started",
-      priority: "High",
-      description: "Large format banners for outdoor event",
-      productType: "Banners",
-      quantity: 5,
-      estimatedHours: 6,
-      assignedTo: "Mike Johnson",
-      createdBy: "David Kim",
+      name: "Mike Wilson",
+      role: "Sales Manager",
+      department: "Sales",
+      jobsCreated: 12,
+      hoursScheduled: 48,
     },
     {
       id: "4",
-      title: "Flyers",
-      customer: "Local Business",
-      time: "3:30 PM",
-      status: "Pending",
-      priority: "Low",
-      description: "Promotional flyers for weekend sale",
-      productType: "Flyers",
-      quantity: 2500,
-      estimatedHours: 3,
-      assignedTo: "Sarah Williams",
-      createdBy: "Robert Chen",
+      name: "Jordan Davis",
+      role: "Account Executive",
+      department: "Sales",
+      jobsCreated: 8,
+      hoursScheduled: 32,
     },
   ];
 
-  // Weekly calendar data - more comprehensive
+  // Load jobs from localStorage
+  const [jobEvents, setJobEvents] = useState<JobEvent[]>([]);
+
+  // Load jobs from localStorage when component mounts or when localStorage changes
+  useEffect(() => {
+    const loadJobs = () => {
+      try {
+        const storedJobs = localStorage.getItem("jobs");
+        if (storedJobs) {
+          const parsedJobs = JSON.parse(storedJobs);
+          // Convert to JobEvent format
+          const formattedJobs = parsedJobs.map((job: any) => ({
+            id: job.id,
+            title: job.title || "Untitled Job",
+            customer: job.customer || "Unknown Customer",
+            time: job.scheduledTime || "09:00",
+            status: job.status || "Not Started",
+            priority: job.priority || "Medium",
+            description: job.description,
+            productType: job.productType,
+            quantity: job.quantity,
+            estimatedHours: job.estimatedTime ? job.estimatedTime / 60 : 1,
+            assignedTo: job.assignedTo || "Unassigned",
+            dueDate: job.dueDate,
+          }));
+          setJobEvents(formattedJobs);
+        }
+      } catch (error) {
+        console.error("Error loading jobs:", error);
+      }
+    };
+
+    // Load jobs initially
+    loadJobs();
+
+    // Set up storage event listener to refresh data when localStorage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "jobs") {
+        loadJobs();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  // Weekly calendar data
   const weeklyCalendarData = [
     // Monday
-    [
-      {
-        id: "5",
-        title: "Postcards",
-        customer: "Travel Agency",
-        time: "9:00 AM",
-        status: "Completed",
-        priority: "Medium",
-        estimatedHours: 2,
-        assignedTo: "Jane Smith",
-      },
-    ],
+    [],
     // Tuesday
-    [
-      jobEvents[0],
-      {
-        id: "6",
-        title: "Letterheads",
-        customer: "Law Firm",
-        time: "2:00 PM",
-        status: "In Production",
-        priority: "Low",
-        estimatedHours: 1.5,
-        assignedTo: "John Doe",
-      },
-    ],
+    [],
     // Wednesday
-    [
-      jobEvents[1],
-      {
-        id: "7",
-        title: "Posters",
-        customer: "Music Festival",
-        time: "3:00 PM",
-        status: "Pending",
-        priority: "Medium",
-        estimatedHours: 3,
-        assignedTo: "Mike Johnson",
-      },
-    ],
+    [],
     // Thursday
-    [
-      jobEvents[2],
-      {
-        id: "8",
-        title: "Business Cards",
-        customer: "Tech Startup",
-        time: "11:00 AM",
-        status: "Not Started",
-        priority: "Low",
-        estimatedHours: 1,
-        assignedTo: "Sarah Williams",
-      },
-    ],
+    [],
     // Friday
-    [
-      jobEvents[3],
-      {
-        id: "9",
-        title: "Catalogs",
-        customer: "Retail Store",
-        time: "10:00 AM",
-        status: "Pending",
-        priority: "High",
-        estimatedHours: 5,
-        assignedTo: "John Doe",
-      },
-    ],
+    [],
     // Saturday
-    [
-      {
-        id: "10",
-        title: "Rush Flyers",
-        customer: "Weekend Event",
-        time: "9:00 AM",
-        status: "Pending",
-        priority: "High",
-        estimatedHours: 2,
-        assignedTo: "Jane Smith",
-      },
-    ],
+    [],
     // Sunday
     [],
   ];
@@ -299,6 +222,29 @@ export default function Dashboard({
     setSelectedJob(job);
     setShowJobDetails(true);
   };
+
+  const handleAddNewJob = () => {
+    navigate("/jobs/new");
+  };
+
+  // Check if we should focus on the calendar (coming from job creation)
+  useEffect(() => {
+    if (location.state?.showCalendar) {
+      // Focus on the calendar view
+      setCalendarView("day");
+
+      // If there's a new job ID, we could highlight it or show a message
+      if (location.state.newJobId) {
+        // Show a message to the user
+        alert(
+          "Your job has been created! Now you can schedule it by dragging it to a time slot in the calendar.",
+        );
+      }
+
+      // Clear the location state to prevent showing the message again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   return (
     <div className="bg-background">
@@ -324,7 +270,7 @@ export default function Dashboard({
                 {userRole === "sales" ? "Sales View" : "Production View"}
               </Label>
             </div>
-            <Button onClick={() => navigate("/jobs/new")}>
+            <Button onClick={handleAddNewJob}>
               <Plus className="mr-2 h-4 w-4" /> Add New Job
             </Button>
           </div>
@@ -385,19 +331,35 @@ export default function Dashboard({
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Total Jobs</span>
-                    <span className="font-medium">24</span>
+                    <span className="font-medium">{jobEvents.length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">In Production</span>
-                    <span className="font-medium">8</span>
+                    <span className="font-medium">
+                      {
+                        jobEvents.filter(
+                          (job) => job.status === "In Production",
+                        ).length
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Pending</span>
-                    <span className="font-medium">12</span>
+                    <span className="font-medium">
+                      {
+                        jobEvents.filter((job) => job.status === "Pending")
+                          .length
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm">Completed This Week</span>
-                    <span className="font-medium">4</span>
+                    <span className="text-sm">Completed</span>
+                    <span className="font-medium">
+                      {
+                        jobEvents.filter((job) => job.status === "Completed")
+                          .length
+                      }
+                    </span>
                   </div>
                 </div>
               </div>
@@ -542,123 +504,83 @@ export default function Dashboard({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                {
-                  id: "u1",
-                  title: "Brochures",
-                  customer: "Acme Corp",
-                  time: "9:00 AM",
-                  due: "Tomorrow",
-                  status: "In Production",
-                  priority: "High",
-                  estimatedHours: 4,
-                  description: "Tri-fold brochures for product launch",
-                  productType: "Brochures",
-                  quantity: 1000,
-                  assignedTo: "John Doe",
-                  createdBy: "Lisa Garcia",
-                },
-                {
-                  id: "u2",
-                  title: "Menus",
-                  customer: "Local Restaurant",
-                  time: "10:30 AM",
-                  due: "In 2 days",
-                  status: "Pending",
-                  priority: "Medium",
-                  estimatedHours: 3,
-                  description: "Double-sided menus with specials section",
-                  productType: "Menus",
-                  quantity: 50,
-                  assignedTo: "Jane Smith",
-                  createdBy: "Robert Chen",
-                },
-                {
-                  id: "u3",
-                  title: "Badges",
-                  customer: "Tech Conference",
-                  time: "1:00 PM",
-                  due: "In 3 days",
-                  status: "Not Started",
-                  priority: "High",
-                  estimatedHours: 5,
-                  description: "Conference badges with QR codes",
-                  productType: "Badges",
-                  quantity: 200,
-                  assignedTo: "Mike Johnson",
-                  createdBy: "David Kim",
-                },
-                {
-                  id: "u4",
-                  title: "Posters",
-                  customer: "Retail Store",
-                  time: "11:00 AM",
-                  due: "In 5 days",
-                  status: "Pending",
-                  priority: "Low",
-                  estimatedHours: 2,
-                  description: "Sale posters for store windows",
-                  productType: "Posters",
-                  quantity: 10,
-                  assignedTo: "Sarah Williams",
-                  createdBy: "Robert Chen",
-                },
-                {
-                  id: "u5",
-                  title: "Catalogs",
-                  customer: "Marketing Agency",
-                  time: "2:00 PM",
-                  due: "In 7 days",
-                  status: "Not Started",
-                  priority: "Medium",
-                  estimatedHours: 6,
-                  description: "Product catalogs with updated pricing",
-                  productType: "Catalogs",
-                  quantity: 500,
-                  assignedTo: "John Doe",
-                  createdBy: "Lisa Garcia",
-                },
-              ].map((job, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between items-center p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleJobClick(job)}
-                >
-                  <div>
-                    <p className="font-medium">{job.customer}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {job.title} • Due {job.due} • {job.estimatedHours}h •{" "}
-                      {job.assignedTo}
-                    </p>
+              {jobEvents
+                .filter((job) => {
+                  // Filter for jobs with due dates in the next 7 days
+                  if (!job.dueDate) return false;
+                  const dueDate = new Date(job.dueDate);
+                  const today = new Date();
+                  const nextWeek = new Date();
+                  nextWeek.setDate(today.getDate() + 7);
+                  return dueDate >= today && dueDate <= nextWeek;
+                })
+                .sort((a, b) => {
+                  // Sort by due date (ascending)
+                  if (!a.dueDate) return 1;
+                  if (!b.dueDate) return -1;
+                  return (
+                    new Date(a.dueDate).getTime() -
+                    new Date(b.dueDate).getTime()
+                  );
+                })
+                .map((job, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleJobClick(job)}
+                  >
+                    <div>
+                      <p className="font-medium">{job.customer}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {job.title} • Due{" "}
+                        {job.dueDate
+                          ? new Date(job.dueDate).toLocaleDateString()
+                          : "Not set"}{" "}
+                        • {job.estimatedHours}h • {job.assignedTo}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={cn(
+                          "text-xs px-2 py-1 rounded-full",
+                          job.status === "In Production"
+                            ? "bg-blue-100 text-blue-800"
+                            : job.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : job.status === "Completed"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800",
+                        )}
+                      >
+                        {job.status}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs px-2 py-1 rounded-full",
+                          job.priority === "High"
+                            ? "bg-red-100 text-red-800"
+                            : job.priority === "Medium"
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-green-100 text-green-800",
+                        )}
+                      >
+                        {job.priority}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={cn(
-                        "text-xs px-2 py-1 rounded-full",
-                        job.status === "In Production"
-                          ? "bg-blue-100 text-blue-800"
-                          : job.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-gray-100 text-gray-800",
-                      )}
-                    >
-                      {job.status}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-xs px-2 py-1 rounded-full",
-                        job.priority === "High"
-                          ? "bg-red-100 text-red-800"
-                          : job.priority === "Medium"
-                            ? "bg-orange-100 text-orange-800"
-                            : "bg-green-100 text-green-800",
-                      )}
-                    >
-                      {job.priority}
-                    </span>
-                  </div>
+                ))}
+              {jobEvents.filter((job) => {
+                if (!job.dueDate) return false;
+                const dueDate = new Date(job.dueDate);
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                return dueDate >= today && dueDate <= nextWeek;
+              }).length === 0 && (
+                <div className="text-center p-4 text-muted-foreground">
+                  No jobs due in the next 7 days
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -777,11 +699,26 @@ export default function Dashboard({
           // In a real app, this would update the job in the database
           // For now, we'll just update the local state
           if (selectedJob) {
-            const updatedJobs = jobEvents.map((job) =>
+            // Update the job in the local state
+            const updatedJobEvents = jobEvents.map((job) =>
               job.id === selectedJob.id ? { ...job, ...updatedJob } : job,
             );
-            // This is just for demo purposes - in a real app you'd update the state properly
-            alert(`Job "${updatedJob.title}" updated successfully!`);
+            setJobEvents(updatedJobEvents);
+
+            // Also update the job in localStorage
+            try {
+              const storedJobs = JSON.parse(
+                localStorage.getItem("jobs") || "[]",
+              );
+              const updatedStoredJobs = storedJobs.map((job: any) =>
+                job.id === selectedJob.id ? { ...job, ...updatedJob } : job,
+              );
+              localStorage.setItem("jobs", JSON.stringify(updatedStoredJobs));
+              alert(`Job "${updatedJob.title}" updated successfully!`);
+            } catch (error) {
+              console.error("Error updating job:", error);
+              alert("Error updating job. Please try again.");
+            }
           }
         }}
       />

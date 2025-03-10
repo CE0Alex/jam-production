@@ -10,7 +10,7 @@ import StaffPage from "./staff";
 import SettingsPage from "./settings";
 import { useEffect, useState } from "react";
 
-export default function AppRoutes() {
+export default function AppRoutes({ tempoRoutes = [] }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -39,7 +39,9 @@ export default function AppRoutes() {
       </Route>
 
       {/* Add Tempo routes if needed */}
-      {import.meta.env.VITE_TEMPO === "true" && <Route path="/tempobook/*" />}
+      {import.meta.env.VITE_TEMPO === "true" && (
+        <Route path="/tempobook/*" element={<div />} />
+      )}
     </Routes>
   );
 }

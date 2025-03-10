@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EditJobDialog from "@/components/jobs/EditJobDialog";
 import {
   format,
@@ -55,170 +55,51 @@ export default function ProductionCalendar({
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  // Sample job data
-  const jobEvents: Job[] = [
-    {
-      id: "1",
-      title: "Business Cards",
-      customer: "John Smith",
-      time: "08:00",
-      endTime: "10:00",
-      status: "In Production",
-      priority: "Medium",
-      description: "500 business cards with logo and contact information",
-      productType: "Business Cards",
-      quantity: 500,
-      estimatedHours: 2,
-      assignedTo: "Jane Smith",
-      createdBy: "Robert Chen",
-      pdfTicket: "business_cards_john_smith.pdf",
-    },
-    {
-      id: "2",
-      title: "Brochures",
-      customer: "Acme Corp",
-      time: "10:30",
-      endTime: "14:30",
-      status: "Pending",
-      priority: "High",
-      description: "Tri-fold brochures for product launch",
-      productType: "Brochures",
-      quantity: 1000,
-      estimatedHours: 4,
-      assignedTo: "John Doe",
-      createdBy: "Lisa Garcia",
-      pdfTicket: "brochures_acme_corp.pdf",
-    },
-    {
-      id: "3",
-      title: "Banners",
-      customer: "City Event",
-      time: "13:00",
-      endTime: "19:00",
-      status: "Not Started",
-      priority: "High",
-      description: "Large format banners for outdoor event",
-      productType: "Banners",
-      quantity: 5,
-      estimatedHours: 6,
-      assignedTo: "Mike Johnson",
-      createdBy: "David Kim",
-      pdfTicket: "banners_city_event.pdf",
-    },
-    {
-      id: "4",
-      title: "Flyers",
-      customer: "Local Business",
-      time: "15:30",
-      endTime: "18:30",
-      status: "Pending",
-      priority: "Low",
-      description: "Promotional flyers for weekend sale",
-      productType: "Flyers",
-      quantity: 2500,
-      estimatedHours: 3,
-      assignedTo: "Sarah Williams",
-      createdBy: "Robert Chen",
-      pdfTicket: "flyers_local_business.pdf",
-    },
-  ];
+  // Job data array
+  const [jobEvents, setJobEvents] = useState<Job[]>([]);
 
-  // Weekly calendar data - more comprehensive
+  // Load jobs from localStorage when component mounts
+  useEffect(() => {
+    try {
+      const storedJobs = localStorage.getItem("jobs");
+      if (storedJobs) {
+        const parsedJobs = JSON.parse(storedJobs);
+        // Convert to Job format
+        const formattedJobs = parsedJobs.map((job: any) => ({
+          id: job.id,
+          title: job.title || "Untitled Job",
+          customer: job.customer || "Unknown Customer",
+          time: job.scheduledTime || "09:00",
+          endTime: job.scheduledEndTime,
+          status: job.status || "Not Started",
+          priority: job.priority || "Medium",
+          description: job.description,
+          productType: job.productType,
+          quantity: job.quantity,
+          estimatedHours: job.estimatedTime ? job.estimatedTime / 60 : 1,
+          assignedTo: job.assignedTo || "Unassigned",
+        }));
+        setJobEvents(formattedJobs);
+      }
+    } catch (error) {
+      console.error("Error loading jobs:", error);
+    }
+  }, []);
+
+  // Weekly calendar data
   const weeklyCalendarData = [
     // Monday
-    [
-      {
-        id: "5",
-        title: "Postcards",
-        customer: "Travel Agency",
-        time: "09:00",
-        endTime: "11:00",
-        status: "Completed",
-        priority: "Medium",
-        estimatedHours: 2,
-        assignedTo: "Jane Smith",
-        pdfTicket: "postcards_travel_agency.pdf",
-      },
-    ],
+    [],
     // Tuesday
-    [
-      jobEvents[0],
-      {
-        id: "6",
-        title: "Letterheads",
-        customer: "Law Firm",
-        time: "14:00",
-        endTime: "15:30",
-        status: "In Production",
-        priority: "Low",
-        estimatedHours: 1.5,
-        assignedTo: "John Doe",
-        pdfTicket: "letterheads_law_firm.pdf",
-      },
-    ],
+    [],
     // Wednesday
-    [
-      jobEvents[1],
-      {
-        id: "7",
-        title: "Posters",
-        customer: "Music Festival",
-        time: "15:00",
-        endTime: "18:00",
-        status: "Pending",
-        priority: "Medium",
-        estimatedHours: 3,
-        assignedTo: "Mike Johnson",
-        pdfTicket: "posters_music_festival.pdf",
-      },
-    ],
+    [],
     // Thursday
-    [
-      jobEvents[2],
-      {
-        id: "8",
-        title: "Business Cards",
-        customer: "Tech Startup",
-        time: "11:00",
-        endTime: "12:00",
-        status: "Not Started",
-        priority: "Low",
-        estimatedHours: 1,
-        assignedTo: "Sarah Williams",
-        pdfTicket: "business_cards_tech_startup.pdf",
-      },
-    ],
+    [],
     // Friday
-    [
-      jobEvents[3],
-      {
-        id: "9",
-        title: "Catalogs",
-        customer: "Retail Store",
-        time: "10:00",
-        endTime: "15:00",
-        status: "Pending",
-        priority: "High",
-        estimatedHours: 5,
-        assignedTo: "John Doe",
-        pdfTicket: "catalogs_retail_store.pdf",
-      },
-    ],
+    [],
     // Saturday
-    [
-      {
-        id: "10",
-        title: "Rush Flyers",
-        customer: "Weekend Event",
-        time: "09:00",
-        endTime: "11:00",
-        status: "Pending",
-        priority: "High",
-        estimatedHours: 2,
-        assignedTo: "Jane Smith",
-        pdfTicket: "rush_flyers_weekend_event.pdf",
-      },
-    ],
+    [],
     // Sunday
     [],
   ];
@@ -226,6 +107,39 @@ export default function ProductionCalendar({
   const handleJobClick = (job: Job) => {
     setSelectedJob(job);
     setShowJobDetails(true);
+  };
+
+  // Function to handle scheduling a job
+  const handleScheduleJob = (job: Job, timeSlot: string, day?: Date) => {
+    // In a real app, this would update the job in the database with scheduling info
+    console.log(
+      `Scheduling job ${job.id} at ${timeSlot}${day ? " on " + format(day, "PPP") : ""}`,
+    );
+
+    try {
+      // For demo purposes, update the job in localStorage
+      const jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+      const updatedJobs = jobs.map((j: any) => {
+        if (j.id === job.id) {
+          return {
+            ...j,
+            scheduledTime: timeSlot,
+            scheduledDay: day
+              ? format(day, "yyyy-MM-dd")
+              : format(new Date(), "yyyy-MM-dd"),
+            assignedTo: job.assignedTo || "Unassigned",
+          };
+        }
+        return j;
+      });
+      localStorage.setItem("jobs", JSON.stringify(updatedJobs));
+
+      // For demo purposes, show a success message
+      alert(`Job "${job.title}" scheduled successfully!`);
+    } catch (error) {
+      console.error("Error scheduling job:", error);
+      alert("Error scheduling job. Please try again.");
+    }
   };
 
   const handleViewPdf = () => {
@@ -441,6 +355,8 @@ export default function ProductionCalendar({
                                   {job.endTime
                                     ? formatTimeDisplay(job.endTime)
                                     : "N/A"}
+                                  {job.estimatedHours &&
+                                    ` (${job.estimatedHours}h)`}
                                 </div>
                               </div>
                             );
@@ -743,11 +659,26 @@ export default function ProductionCalendar({
           // In a real app, this would update the job in the database
           // For now, we'll just update the local state
           if (selectedJob) {
-            const updatedJobs = jobEvents.map((job) =>
+            // Update the job in the local state
+            const updatedJobEvents = jobEvents.map((job) =>
               job.id === selectedJob.id ? { ...job, ...updatedJob } : job,
             );
-            // This is just for demo purposes - in a real app you'd update the state properly
-            alert(`Job "${updatedJob.title}" updated successfully!`);
+            setJobEvents(updatedJobEvents);
+
+            // Also update the job in localStorage
+            try {
+              const storedJobs = JSON.parse(
+                localStorage.getItem("jobs") || "[]",
+              );
+              const updatedStoredJobs = storedJobs.map((job: any) =>
+                job.id === selectedJob.id ? { ...job, ...updatedJob } : job,
+              );
+              localStorage.setItem("jobs", JSON.stringify(updatedStoredJobs));
+              alert(`Job "${updatedJob.title}" updated successfully!`);
+            } catch (error) {
+              console.error("Error updating job:", error);
+              alert("Error updating job. Please try again.");
+            }
           }
         }}
       />

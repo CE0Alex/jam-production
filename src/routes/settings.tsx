@@ -407,38 +407,7 @@ export default function SettingsPage() {
                   <div>Actions</div>
                 </div>
                 <div className="divide-y">
-                  {[
-                    {
-                      name: "John Doe",
-                      email: "john.doe@printshop.com",
-                      role: "Admin",
-                    },
-                    {
-                      name: "Jane Smith",
-                      email: "jane.smith@printshop.com",
-                      role: "Production",
-                    },
-                    {
-                      name: "Mike Johnson",
-                      email: "mike.johnson@printshop.com",
-                      role: "Production",
-                    },
-                    {
-                      name: "Sarah Williams",
-                      email: "sarah.williams@printshop.com",
-                      role: "Production",
-                    },
-                    {
-                      name: "Robert Chen",
-                      email: "robert.chen@printshop.com",
-                      role: "Sales",
-                    },
-                    {
-                      name: "Lisa Garcia",
-                      email: "lisa.garcia@printshop.com",
-                      role: "Sales",
-                    },
-                  ].map((user, i) => (
+                  {[].map((user, i) => (
                     <div
                       key={i}
                       className="grid grid-cols-4 p-3 text-sm items-center"

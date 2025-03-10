@@ -76,19 +76,8 @@ export default function PDFUploader({ onExtractedData }: PDFUploaderProps) {
       setUploadProgress(100);
       setExtractionStatus("success");
 
-      // Mock extracted data
-      const mockExtractedData: Partial<Job> = {
-        title: "Business Cards - ABC Company",
-        customer: "ABC Company",
-        description:
-          "Double-sided business cards with logo and contact information",
-        productType: "Business Cards",
-        quantity: 500,
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        status: "Not Started",
-        priority: "Medium",
-        estimatedTime: 120, // 2 hours in minutes
-      };
+      // Create empty extracted data object
+      const mockExtractedData: Partial<Job> = {};
 
       if (onExtractedData) {
         onExtractedData(mockExtractedData);

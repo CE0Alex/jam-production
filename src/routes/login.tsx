@@ -7,18 +7,24 @@ export default function LoginPage() {
     console.log(`Logging in with ${email} as ${role}`);
 
     // Store user info in localStorage for demo purposes
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        email,
-        role,
-        name: email
-          .split("@")[0]
-          .split(".")
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(" "),
-      }),
-    );
+    try {
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          email,
+          role,
+          name: email
+            .split("@")[0]
+            .split(".")
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(" "),
+          lastLogin: new Date().toISOString(),
+        }),
+      );
+    } catch (error) {
+      console.error("Error storing user data:", error);
+      alert("There was an error logging in. Please try again.");
+    }
   };
 
   return (

@@ -55,10 +55,12 @@ export default function NewJobPage() {
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    setFormData((prev) => ({
-      ...prev,
-      dueDate: date,
-    }));
+    if (date) {
+      setFormData((prev) => ({
+        ...prev,
+        dueDate: date,
+      }));
+    }
   };
 
   const handleExtractedData = (data: Partial<Job>) => {
@@ -72,19 +74,32 @@ export default function NewJobPage() {
     // In a real app, this would save to a database
     console.log("Submitting job:", formData);
 
-    // For demo purposes, store in localStorage
-    const jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
-    const newJob = {
-      ...formData,
-      id: `job-${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    jobs.push(newJob);
-    localStorage.setItem("jobs", JSON.stringify(jobs));
+    try {
+      // Create a basic job without scheduling details
+      const basicJob = {
+        ...formData,
+        id: `job-${Date.now()}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        // Set default values for required fields
+        status: formData.status || "Not Started",
+        priority: formData.priority || "Medium",
+      };
 
-    // Navigate to jobs list
-    navigate("/jobs");
+      // For demo purposes, store in localStorage
+      const jobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+      jobs.push(basicJob);
+      localStorage.setItem("jobs", JSON.stringify(jobs));
+
+      // No need for an alert here as we'll show guidance on the calendar page
+
+      // Navigate to the interactive calendar view
+      navigate("/", { state: { showCalendar: true, newJobId: basicJob.id } });
+    } catch (error) {
+      console.error("Error saving job:", error);
+      alert("Error creating job. Please try again.");
+      // Stay on the page if there's an error
+    }
   };
 
   return (
@@ -226,23 +241,32 @@ export default function NewJobPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="totalProductionTime">
-                    Total Production Time (min)
+                  <Label htmlFor="estimatedTime">
+                    Total Production Time (hours)
                   </Label>
                   <Input
-                    id="totalProductionTime"
+                    id="estimatedTime"
                     type="number"
-                    placeholder="Calculated automatically"
-                    value={formData.estimatedTime || ""}
-                    onChange={handleInputChange}
-                    disabled
+                    placeholder="2"
+                    value={
+                      formData.estimatedTime ? formData.estimatedTime / 60 : ""
+                    }
+                    onChange={(e) => {
+                      const hours = parseFloat(e.target.value) || 0;
+                      // Convert hours to minutes for storage
+                      const minutes = Math.round(hours * 60);
+                      setFormData((prev) => ({
+                        ...prev,
+                        estimatedTime: minutes,
+                      }));
+                    }}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Label htmlFor="dueDate">Due Date (Optional)</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -253,7 +277,7 @@ export default function NewJobPage() {
                         {formData.dueDate ? (
                           format(formData.dueDate, "PPP")
                         ) : (
-                          <span>Pick a date</span>
+                          <span>Pick a date (optional)</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -290,18 +314,31 @@ export default function NewJobPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="estimatedTime">
-                    Estimated Production Time (minutes)
+                    Estimated Production Time (hours)
                   </Label>
                   <Input
                     id="estimatedTime"
                     type="number"
-                    placeholder="120"
-                    value={formData.estimatedTime || ""}
-                    onChange={handleInputChange}
+                    placeholder="2"
+                    value={
+                      formData.estimatedTime ? formData.estimatedTime / 60 : ""
+                    }
+                    onChange={(e) => {
+                      const hours = parseFloat(e.target.value) || 0;
+                      // Convert hours to minutes for storage
+                      const minutes = Math.round(hours * 60);
+                      setFormData((prev) => ({
+                        ...prev,
+                        estimatedTime: minutes,
+                      }));
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="assignedTo">Assign To</Label>
+                  <Label htmlFor="assignedTo">Assign To (Optional)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    You can assign staff later in the calendar view
+                  </p>
                   <Select
                     value={formData.assignedTo}
                     onValueChange={(value) =>
@@ -309,9 +346,10 @@ export default function NewJobPage() {
                     }
                   >
                     <SelectTrigger id="assignedTo">
-                      <SelectValue placeholder="Select staff member" />
+                      <SelectValue placeholder="Select staff member (optional)" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Unassigned">Unassigned</SelectItem>
                       <SelectItem value="John Doe">John Doe</SelectItem>
                       <SelectItem value="Jane Smith">Jane Smith</SelectItem>
                       <SelectItem value="Mike Johnson">Mike Johnson</SelectItem>
@@ -374,37 +412,46 @@ export default function NewJobPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Schedule Preview</CardTitle>
+              <CardTitle>Job Summary</CardTitle>
               <CardDescription>
-                Preview where this job will fit in the production schedule
+                Summary of the job to be created
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {formData.dueDate && formData.estimatedTime ? (
+              {formData.title && formData.estimatedTime ? (
                 <div className="space-y-4">
                   <div className="p-3 rounded-md border-l-4 border-blue-500 bg-blue-50">
                     <div className="font-medium">
                       {formData.title || "New Job"}
                     </div>
+                    {formData.dueDate && (
+                      <div className="text-sm text-muted-foreground">
+                        Due: {format(formData.dueDate, "PPP")}
+                      </div>
+                    )}
                     <div className="text-sm text-muted-foreground">
-                      Due: {format(formData.dueDate, "PPP")}
+                      Estimated time:{" "}
+                      {formData.estimatedTime
+                        ? (formData.estimatedTime / 60).toFixed(1)
+                        : 0}{" "}
+                      hours
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Estimated time: {formData.estimatedTime} minutes
+                      Status: {formData.status || "Not Started"}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Assigned to: {formData.assignedTo || "Unassigned"}
+                      Priority: {formData.priority || "Medium"}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    This job will be scheduled based on staff availability and
-                    priority.
+                    After creating this job, you'll be directed to the calendar
+                    to schedule it.
                   </div>
                 </div>
               ) : (
                 <div className="text-center p-6 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">
-                    Fill in job details to see schedule preview
+                    Fill in job details to see job summary
                   </p>
                 </div>
               )}

@@ -23,9 +23,14 @@ dist-ssr
 *.sln
 *.sw?
 
-!node_modules/.vite
-
+# Tempo specific
 **/tempobook/dynamic/
 **/tempobook/storyboards/
 
-core
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+EOL ; npm install && echo 'Tempo: Node Modules Installed' ; npm run dev -- --host 0.0.0.0 --port 3000

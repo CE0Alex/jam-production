@@ -1,10 +1,10 @@
 /**
- * Rounds a time value to the nearest 30-minute increment
+ * Rounds a time value to the nearest hour
  * @param minutes Time in minutes
- * @returns Time rounded to nearest 30-minute increment
+ * @returns Time rounded to nearest hour (in minutes)
  */
-export function roundToNearestThirtyMinutes(minutes: number): number {
-  return Math.ceil(minutes / 30) * 30;
+export function roundToNearestHour(minutes: number): number {
+  return Math.round(minutes / 60) * 60;
 }
 
 /**
@@ -13,16 +13,10 @@ export function roundToNearestThirtyMinutes(minutes: number): number {
  * @returns Formatted time string (e.g., "2 hours 30 minutes" or "30 minutes")
  */
 export function formatTimeDisplay(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
+  const hours = minutes / 60;
+  const formattedHours = hours.toFixed(1);
 
-  if (hours === 0) {
-    return `${remainingMinutes} minutes`;
-  } else if (remainingMinutes === 0) {
-    return `${hours} hour${hours !== 1 ? "s" : ""}`;
-  } else {
-    return `${hours} hour${hours !== 1 ? "s" : ""} ${remainingMinutes} minutes`;
-  }
+  return `${formattedHours} hour${hours !== 1 ? "s" : ""}`;
 }
 
 /**

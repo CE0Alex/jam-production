@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { roundToNearestThirtyMinutes } from "@/utils/timeUtils";
+import { roundToNearestHour } from "@/utils/timeUtils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -39,81 +39,8 @@ export default function ProductSelector({
     productionTime: 0,
   });
 
-  // Sample product data - in a real app, this would come from an API or database
-  const productCatalog: Product[] = [
-    {
-      id: "1",
-      name: "Business Cards",
-      jobType: "Digital Printing",
-      description: "Standard business cards in various sizes and finishes",
-      productionTime: 120, // 2 hours
-      setupTime: 30, // 30 minutes
-      finishingTime: 30, // 30 minutes (adjusted to 30-min increment)
-    },
-    {
-      id: "2",
-      name: "Brochures",
-      jobType: "Digital Printing",
-      description: "Tri-fold or bi-fold brochures on premium paper stock",
-      productionTime: 240, // 4 hours
-      setupTime: 30, // 30 minutes (adjusted to 30-min increment)
-      finishingTime: 60, // 1 hour
-    },
-    {
-      id: "3",
-      name: "Flyers",
-      jobType: "Digital Printing",
-      description: "Single or double-sided flyers in various sizes",
-      productionTime: 180, // 3 hours
-      setupTime: 30, // 30 minutes
-      finishingTime: 30, // 30 minutes (adjusted to 30-min increment)
-    },
-    {
-      id: "4",
-      name: "Posters",
-      jobType: "Wide Format",
-      description: "Large format posters for indoor or outdoor use",
-      productionTime: 300, // 5 hours
-      setupTime: 60, // 1 hour
-      finishingTime: 30, // 30 minutes (adjusted to 30-min increment)
-    },
-    {
-      id: "5",
-      name: "Banners",
-      jobType: "Wide Format",
-      description: "Vinyl banners with grommets for easy hanging",
-      productionTime: 360, // 6 hours
-      setupTime: 90, // 1.5 hours
-      finishingTime: 120, // 2 hours
-    },
-    {
-      id: "6",
-      name: "T-Shirts",
-      jobType: "Screen Printing",
-      description: "Screen printed t-shirts with custom designs",
-      productionTime: 480, // 8 hours
-      setupTime: 120, // 2 hours
-      finishingTime: 60, // 1 hour
-    },
-    {
-      id: "7",
-      name: "Custom Hats",
-      jobType: "Embroidery",
-      description: "Embroidered hats with custom logos",
-      productionTime: 240, // 4 hours
-      setupTime: 60, // 1 hour
-      finishingTime: 30, // 30 minutes
-    },
-    {
-      id: "8",
-      name: "Transfer Prints",
-      jobType: "DTF",
-      description: "Direct to film transfer prints for apparel",
-      productionTime: 180, // 3 hours
-      setupTime: 30, // 30 minutes (adjusted to 30-min increment)
-      finishingTime: 30, // 30 minutes (adjusted to 30-min increment)
-    },
-  ];
+  // Product catalog data
+  const productCatalog: Product[] = [];
 
   const jobTypes: JobType[] = [
     "Digital Printing",
@@ -142,9 +69,7 @@ export default function ProductSelector({
     const newProduct: JobProduct = {
       productType: currentProduct.productType,
       quantity: currentProduct.quantity || 1,
-      productionTime: roundToNearestThirtyMinutes(
-        productDetails.productionTime,
-      ),
+      productionTime: Math.round(productDetails.productionTime / 60) * 60,
       setupTime: productDetails.setupTime,
       finishingTime: productDetails.finishingTime,
     };
@@ -175,9 +100,7 @@ export default function ProductSelector({
     setCurrentProduct({
       productType: productName,
       quantity: 1,
-      productionTime: roundToNearestThirtyMinutes(
-        productDetails.productionTime,
-      ),
+      productionTime: Math.round(productDetails.productionTime / 60) * 60,
     });
   };
 
@@ -252,11 +175,9 @@ export default function ProductSelector({
                   setCurrentProduct({
                     ...currentProduct,
                     quantity: parseInt(e.target.value) || 1,
-                    // Ensure production time is in 30-min increments
+                    // Ensure production time is in hour increments
                     productionTime: currentProduct.productionTime
-                      ? roundToNearestThirtyMinutes(
-                          currentProduct.productionTime,
-                        )
+                      ? Math.round(currentProduct.productionTime / 60) * 60
                       : 0,
                   })
                 }
@@ -295,7 +216,7 @@ export default function ProductSelector({
                     <p className="font-medium">{product.productType}</p>
                     <p className="text-sm text-muted-foreground">
                       Quantity: {product.quantity} • Total Time:{" "}
-                      {calculateTotalTime(product)} minutes
+                      {(calculateTotalTime(product) / 60).toFixed(1)} hours
                     </p>
                   </div>
                   <Button
@@ -313,11 +234,13 @@ export default function ProductSelector({
             <div className="w-full flex justify-between">
               <span className="font-medium">Total Production Time:</span>
               <span className="font-bold">
-                {selectedProducts.reduce(
-                  (total, product) => total + calculateTotalTime(product),
-                  0,
-                )}{" "}
-                minutes
+                {(
+                  selectedProducts.reduce(
+                    (total, product) => total + calculateTotalTime(product),
+                    0,
+                  ) / 60
+                ).toFixed(1)}{" "}
+                hours
               </span>
             </div>
           </CardFooter>

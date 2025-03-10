@@ -210,15 +210,29 @@ export default function EditJobDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="estimatedTime">
-                Estimated Time (minutes, in 30-min increments)
-              </Label>
+              <Label htmlFor="estimatedTime">Estimated Time (hours)</Label>
               <Input
                 id="estimatedTime"
                 type="number"
-                value={formData.estimatedTime || ""}
-                onChange={handleInputChange}
+                value={
+                  formData.estimatedTime ? formData.estimatedTime / 60 : ""
+                }
+                onChange={(e) => {
+                  const hours = parseFloat(e.target.value) || 0;
+                  // Convert hours to minutes for storage
+                  const minutes = Math.round(hours * 60);
+                  setFormData((prev) => ({
+                    ...prev,
+                    estimatedTime: minutes,
+                  }));
+                }}
               />
+              <div className="text-sm font-medium">
+                {formData.estimatedTime
+                  ? (formData.estimatedTime / 60).toFixed(1)
+                  : 0}{" "}
+                hours
+              </div>
             </div>
           </div>
 
@@ -304,10 +318,11 @@ export default function EditJobDialog({
                   <SelectValue placeholder="Select staff member" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="John Doe">John Doe</SelectItem>
-                  <SelectItem value="Jane Smith">Jane Smith</SelectItem>
-                  <SelectItem value="Mike Johnson">Mike Johnson</SelectItem>
-                  <SelectItem value="Sarah Williams">Sarah Williams</SelectItem>
+                  <SelectItem value="Unassigned">Unassigned</SelectItem>
+                  <SelectItem value="Isaac Johnson">Isaac Johnson</SelectItem>
+                  <SelectItem value="Aaron Smith">Aaron Smith</SelectItem>
+                  <SelectItem value="Mike Wilson">Mike Wilson</SelectItem>
+                  <SelectItem value="Jordan Davis">Jordan Davis</SelectItem>
                 </SelectContent>
               </Select>
             </div>

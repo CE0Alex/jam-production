@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { roundToNearestThirtyMinutes } from "@/utils/timeUtils";
+import { roundToNearestHour } from "@/utils/timeUtils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,81 +38,8 @@ export default function ProductsPage() {
     productionTime: 60,
   });
 
-  // Sample product data
-  const products: Product[] = [
-    {
-      id: "1",
-      name: "Business Cards",
-      jobType: "Digital Printing",
-      description: "Standard business cards in various sizes and finishes",
-      productionTime: 120,
-      setupTime: 30,
-      finishingTime: 15,
-    },
-    {
-      id: "2",
-      name: "Brochures",
-      jobType: "Digital Printing",
-      description: "Tri-fold or bi-fold brochures on premium paper stock",
-      productionTime: 240,
-      setupTime: 45,
-      finishingTime: 60,
-    },
-    {
-      id: "3",
-      name: "Flyers",
-      jobType: "Digital Printing",
-      description: "Single or double-sided flyers in various sizes",
-      productionTime: 180,
-      setupTime: 30,
-      finishingTime: 30,
-    },
-    {
-      id: "4",
-      name: "Posters",
-      jobType: "Wide Format",
-      description: "Large format posters for indoor or outdoor use",
-      productionTime: 300,
-      setupTime: 60,
-      finishingTime: 45,
-    },
-    {
-      id: "5",
-      name: "Banners",
-      jobType: "Wide Format",
-      description: "Vinyl banners with grommets for easy hanging",
-      productionTime: 360,
-      setupTime: 90,
-      finishingTime: 120,
-    },
-    {
-      id: "6",
-      name: "T-Shirts",
-      jobType: "Screen Printing",
-      description: "Screen printed t-shirts with custom designs",
-      productionTime: 480,
-      setupTime: 120,
-      finishingTime: 60,
-    },
-    {
-      id: "7",
-      name: "Custom Hats",
-      jobType: "Embroidery",
-      description: "Embroidered hats with custom logos",
-      productionTime: 240,
-      setupTime: 60,
-      finishingTime: 30,
-    },
-    {
-      id: "8",
-      name: "Transfer Prints",
-      jobType: "DTF",
-      description: "Direct to film transfer prints for apparel",
-      productionTime: 180,
-      setupTime: 45,
-      finishingTime: 30,
-    },
-  ];
+  // Product data
+  const products: Product[] = [];
 
   const jobTypes: JobType[] = [
     "Digital Printing",
@@ -135,7 +62,7 @@ export default function ProductsPage() {
       ...prev,
       [id]:
         id === "productionTime" || id === "setupTime" || id === "finishingTime"
-          ? roundToNearestThirtyMinutes(parseInt(value) || 0) // Ensure 30-min increments
+          ? Math.round((parseInt(value) || 0) / 60) * 60 // Ensure hour increments
           : value,
     }));
   };
@@ -223,14 +150,14 @@ export default function ProductsPage() {
                     Production Time:
                   </span>
                   <span className="font-medium">
-                    {product.productionTime} minutes
+                    {(product.productionTime / 60).toFixed(1)} hours
                   </span>
                 </div>
                 {product.setupTime && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Setup Time:</span>
                     <span className="font-medium">
-                      {product.setupTime} minutes
+                      {(product.setupTime / 60).toFixed(1)} hours
                     </span>
                   </div>
                 )}
@@ -240,17 +167,20 @@ export default function ProductsPage() {
                       Finishing Time:
                     </span>
                     <span className="font-medium">
-                      {product.finishingTime} minutes
+                      {(product.finishingTime / 60).toFixed(1)} hours
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total Time:</span>
                   <span className="font-medium">
-                    {product.productionTime +
-                      (product.setupTime || 0) +
-                      (product.finishingTime || 0)}{" "}
-                    minutes
+                    {(
+                      (product.productionTime +
+                        (product.setupTime || 0) +
+                        (product.finishingTime || 0)) /
+                      60
+                    ).toFixed(1)}{" "}
+                    hours
                   </span>
                 </div>
               </div>
@@ -326,37 +256,67 @@ export default function ProductsPage() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="productionTime" className="text-right">
-                Production Time (min, in 30-min increments)
+                Production Time (hours)
               </Label>
               <Input
                 id="productionTime"
                 type="number"
-                value={newProduct.productionTime || ""}
-                onChange={handleInputChange}
+                value={
+                  newProduct.productionTime
+                    ? newProduct.productionTime / 60
+                    : ""
+                }
+                onChange={(e) => {
+                  const hours = parseFloat(e.target.value) || 0;
+                  // Convert hours to minutes for storage
+                  const minutes = Math.round(hours * 60);
+                  setNewProduct((prev) => ({
+                    ...prev,
+                    productionTime: minutes,
+                  }));
+                }}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="setupTime" className="text-right">
-                Setup Time (min, in 30-min increments)
+                Setup Time (hours)
               </Label>
               <Input
                 id="setupTime"
                 type="number"
-                value={newProduct.setupTime || ""}
-                onChange={handleInputChange}
+                value={newProduct.setupTime ? newProduct.setupTime / 60 : ""}
+                onChange={(e) => {
+                  const hours = parseFloat(e.target.value) || 0;
+                  // Convert hours to minutes for storage
+                  const minutes = Math.round(hours * 60);
+                  setNewProduct((prev) => ({
+                    ...prev,
+                    setupTime: minutes,
+                  }));
+                }}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="finishingTime" className="text-right">
-                Finishing Time (min, in 30-min increments)
+                Finishing Time (hours)
               </Label>
               <Input
                 id="finishingTime"
                 type="number"
-                value={newProduct.finishingTime || ""}
-                onChange={handleInputChange}
+                value={
+                  newProduct.finishingTime ? newProduct.finishingTime / 60 : ""
+                }
+                onChange={(e) => {
+                  const hours = parseFloat(e.target.value) || 0;
+                  // Convert hours to minutes for storage
+                  const minutes = Math.round(hours * 60);
+                  setNewProduct((prev) => ({
+                    ...prev,
+                    finishingTime: minutes,
+                  }));
+                }}
                 className="col-span-3"
               />
             </div>
